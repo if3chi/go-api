@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +20,19 @@ type Application struct {
 	Router *mux.Router
 	Logger *zap.Logger
 	Config *config.Config
+}
+
+func (app *Application) Respond(response http.ResponseWriter, request *http.Request, data interface{}, status int) {
+	response.WriteHeader(status)
+	response.Header().Add("Content-Type", app.Config.HTTP.Content)
+
+	if data != nil {
+		if err := json.NewEncoder(response).Encode(data); err != nil {
+			app.Logger.Fatal(err.Error())
+			panic(err)
+		}
+	}
+
 }
 
 func Boot() *Application {
