@@ -11,4 +11,10 @@ func main() {
 	}
 
 	app := kernel.Boot()
+
+	go func() {
+		app.Run()
+	}()
+
+	app.ListenForShutdown()
 }

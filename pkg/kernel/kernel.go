@@ -1,7 +1,11 @@
 package kernel
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	gohandlers "github.com/gorilla/handlers"
@@ -39,4 +43,26 @@ func Boot() *Application {
 		Logger: logger,
 		Config: config,
 	}
+}
+
+func (app *Application) Run() {
+	if err := app.Server.ListenAndServe(); err != nil {
+		app.Logger.Fatal(err.Error())
+		panic(err)
+	}
+}
+
+func (app *Application) ListenForShutdown() {
+	interuptChannel := make(chan os.Signal, 1)
+	signal.Notify(interuptChannel, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	<-interuptChannel
+
+	app.Logger.Info("Recieved exit signal, shutting down.....")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	app.Server.Shutdown(ctx)
+	os.Exit(1)
 }
